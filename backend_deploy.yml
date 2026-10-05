@@ -23,9 +23,19 @@ spec:
               value: "1"
             - name: HTTP_CLOSE_CONNECTION
               value: "1"
+            - name: SLOW_START
+              value: "20"
+            - name: EXTRA_TEXT_SUFFIX
+              value: v2
           ports:
             - name: http
               containerPort: 8000
+          startupProbe:
+            httpGet:
+              path: /readyz
+              port: 8000
+            failureThreshold: 60
+            periodSeconds: 1
           resources:
             requests:
               cpu: 50m
