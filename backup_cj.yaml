@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: cronjob
+spec:
+  # https://crontab.guru/
+  schedule: "*/1 * * * *"
+  concurrencyPolicy: Forbid
+  failedJobsHistoryLimit: 1
+  successfulJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          volumes:
+            - name: backup
+              persistentVolumeClaim:
+                claimName: backup
+          containers:
+            - name: backup
+              image: redis:8
+              args:
+                - /bin/sh
+                - -c
+                - redis-cli -h redis --rdb "/backup/$(date +'%Y-%m-%d_%H-%M-%S').rdb"
+              volumeMounts:
+                  - name: backup
+                    mountPath: /backup
