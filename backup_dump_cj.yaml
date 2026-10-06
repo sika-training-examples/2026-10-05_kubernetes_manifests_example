@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: cronjob
+  name: backup-dump
 spec:
   # https://crontab.guru/
   schedule: "*/1 * * * *"
@@ -11,19 +11,29 @@ spec:
   jobTemplate:
     spec:
       template:
+        metadata:
+          labels:
+            is-backup: "true"
         spec:
+          affinity:
+            podAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - topologyKey: kubernetes.io/hostname
+                  labelSelector:
+                    matchLabels:
+                      is-backup: "true"
           restartPolicy: OnFailure
           volumes:
             - name: backup
               persistentVolumeClaim:
                 claimName: backup
           containers:
-            - name: backup
+            - name: backup-dump
               image: redis:8
               args:
                 - /bin/sh
                 - -c
-                - redis-cli -h redis --rdb "/backup/$(date +'%Y-%m-%d_%H-%M-%S').rdb"
+                - mkdir -p /backup/dump && redis-cli -h redis --rdb "/backup/dump/$(date +'%Y-%m-%d_%H-%M-%S').rdb"
               volumeMounts:
                   - name: backup
                     mountPath: /backup
