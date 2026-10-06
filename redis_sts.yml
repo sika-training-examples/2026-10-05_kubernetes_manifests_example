@@ -3,6 +3,15 @@ kind: StatefulSet
 metadata:
   name: redis
 spec:
+  volumeClaimTemplates:
+    - metadata:
+        name: redis
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
   selector:
     matchLabels:
       app: redis
@@ -11,11 +20,25 @@ spec:
       labels:
         app: redis
     spec:
+      volumes:
+        - name: redis
+          persistentVolumeClaim:
+            claimName: redis
+      initContainers:
+        - name: set-permissions
+          image: busybox
+          command: ["sh", "-c", "chown -R 999:999 /data"]
+          volumeMounts:
+            - name: redis
+              mountPath: /data
       containers:
         - name: redis
           image: redis:8
           ports:
             - containerPort: 6379
+          volumeMounts:
+            - name: redis
+              mountPath: /data
           resources:
             requests:
               cpu: 50m
